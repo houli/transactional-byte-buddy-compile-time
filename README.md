@@ -6,6 +6,7 @@ implementation of the `TransactionManager` mechanics probably isn't all that rob
 figure out was how to match annotated classes and methods and then inject the transactional logic into them.
 
 The output of the decompiled bytecode seems promising at least.
+
 Original class:
 ```java
 package io.github.houli.service;
