@@ -32,10 +32,8 @@ public class TransactionalByteBuddyPlugin extends Plugin.ForElementMatcher {
                             TypeDescription typeDescription,
                             ClassFileLocator classFileLocator) {
         if (typeDescription.getDeclaredAnnotations().isAnnotationPresent(Transactional.class)) {
-            System.out.println("Weird class");
             return applyForClass(builder, typeDescription);
         } else {
-            System.out.println("Weird method");
             return applyForMethods(builder, typeDescription);
         }
     }
@@ -45,11 +43,7 @@ public class TransactionalByteBuddyPlugin extends Plugin.ForElementMatcher {
                 .requireNonNull(typeDescription.getDeclaredAnnotations().ofType(Transactional.class))
                 .load();
 
-        if (transactional.propagation() == Propagation.REQUIRES_NEW) {
-            return builder.visit(Advice.to(ForceNewTransactionTransactionalAdvice.class).on(isMethod()));
-        } else {
-            return builder.visit(Advice.to(NewOrExistingTransactionTransactionalAdvice.class).on(isMethod()));
-        }
+        return builder.visit(Advice.to(adviceClassForPropagation(transactional.propagation())).on(isMethod()));
     }
 
     private Builder<?> applyForMethods(Builder<?> builder, TypeDescription typeDescription) {
@@ -60,14 +54,16 @@ public class TransactionalByteBuddyPlugin extends Plugin.ForElementMatcher {
                         .requireNonNull(method.getDeclaredAnnotations().ofType(Transactional.class))
                         .load();
 
-                if (transactional.propagation() == Propagation.REQUIRES_NEW) {
-                    builder = builder.visit(Advice.to(ForceNewTransactionTransactionalAdvice.class).on(is(method)));
-                } else {
-                    builder = builder.visit(Advice.to(NewOrExistingTransactionTransactionalAdvice.class).on(is(method)));
-                }
+                builder = builder.visit(Advice.to(adviceClassForPropagation(transactional.propagation())).on(is(method)));
             }
         }
         return builder;
+    }
+
+    private Class<?> adviceClassForPropagation(Propagation propagation) {
+        return propagation == Propagation.REQUIRES_NEW
+                ? ForceNewTransactionTransactionalAdvice.class
+                : NewOrExistingTransactionTransactionalAdvice.class;
     }
 
     @Override
